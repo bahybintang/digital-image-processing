@@ -5,6 +5,7 @@ from PIL import Image
 def generate_histogram(img):
     histogram = np.zeros(256)
     for pixel in img:
+        # print(pixel)
         histogram[pixel] += 1
     return histogram
     
@@ -36,19 +37,39 @@ def match (img1, img2):
                     pixel_map[i] = j
     pixel_map[255] = 255
     pixels = img1.load()
+    imNew = Image.new(img1.mode, img1.size)
     for i in range(img1.size[0]):
         for j in range(img1.size[1]):
-            img1.putpixel((i, j), (int(pixel_map[pixels[i, j][0]]), int(pixels[i, j][1])))
-    # img1.show()
-    return img1
+            imNew.putpixel((i, j), int(pixel_map[pixels[i, j]]))
+    return imNew
 
 if __name__ == '__main__':
-    img1 = Image.open("image1.jpg").convert('LA')
-    img2 = Image.open("image2.jpg").convert('LA')
-    img3 = Image.open("image3.jpg").convert('LA')
-    match(img1, img2).convert("RGB").save("image1_2.jpg")
-    match(img1, img3).convert("RGB").save("image1_3.jpg")
-    match(img2, img1).convert("RGB").save("image2_1.jpg")
-    match(img2, img3).convert("RGB").save("image2_3.jpg")
-    match(img3, img1).convert("RGB").save("image3_1.jpg")
-    match(img3, img2).convert("RGB").save("image3_2.jpg")
+    img = []
+    histogram = []
+    for i in range(1, 4):
+        img.append(Image.open('image' + str(i) + '.jpg').convert('L'))
+        histogram.append(generate_histogram(np.asarray(img[i-1]).flatten()))
+    
+    matched = [ [], [], [] ]
+    for i in range(3):
+        for j in range(3):
+            matched[i].append(match(img[i], img[j]))
+    
+    for i in range(3):
+        for j in range(3):
+            fig, ax = plt.subplots(nrows=3, ncols=2)
+            if i != j:
+                fig.suptitle("Matching Image " + str(i+1) + " dengan Image " + str(j+1))
+                ax[0, 0].set_title("Histogram")
+                ax[0, 1].set_title("Image")
+                ax[0, 0].set_ylabel("Image Before")
+                ax[1, 0].set_ylabel("Image to Match")
+                ax[2, 0].set_ylabel("Image After")
+                ax[0, 0].bar(np.arange(256), histogram[i])
+                ax[1, 0].bar(np.arange(256), histogram[j])
+                ax[0, 1].imshow(img[i])
+                ax[1, 1].imshow(img[j])
+                ax[2, 0].bar(np.arange(256), generate_histogram(np.asarray(matched[i][j]).flatten()))
+                ax[2, 1].imshow(matched[i][j])
+                plt.savefig("comp" + str(i+1) + "_" + str(j+1) + ".jpg")
+                plt.clf()
